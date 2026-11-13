@@ -94,7 +94,7 @@ async function loadAuthenticLogo() {
       const pngBlob = extractPngFromAffinityBinary(buf);
       if (pngBlob) {
         const img = await blobToImage(pngBlob);
-        state.logoCanvas = trimTransparentEdges(img);
+        state.logoCanvas = trimTransparentEdges(convertToLogoMask(img));
         console.log('Loaded authentic logo directly from rogo.af');
         return;
       }
@@ -148,6 +148,32 @@ function extractPngFromAffinityBinary(arrayBuffer) {
   if (end === -1) return null;
 
   return new Blob([bytes.subarray(start, end)], { type: 'image/png' });
+}
+
+/**
+ * rogo.af のサムネイルPNGは「白背景に黒ロゴ」の不透明画像のため、
+ * 輝度の反転からアルファマスクを生成する（白地→透明、黒い線→不透明な白）。
+ * 元のアルファとも合成するので、既に透過済みの画像でも壊れない。
+ */
+function convertToLogoMask(img) {
+  const c = document.createElement('canvas');
+  c.width = img.width;
+  c.height = img.height;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+
+  const imgData = ctx.getImageData(0, 0, c.width, c.height);
+  const d = imgData.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const lum = Math.max(d[i], d[i + 1], d[i + 2]);
+    const darkness = 255 - lum;
+    const dAlpha = darkness < 20 ? 0 : Math.min(255, Math.round((darkness - 20) * (255 / 220)));
+    const origAlpha = d[i + 3];
+    d[i] = 255; d[i + 1] = 255; d[i + 2] = 255;
+    d[i + 3] = Math.round(dAlpha * origAlpha / 255);
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return c;
 }
 
 function blobToImage(blob) {
