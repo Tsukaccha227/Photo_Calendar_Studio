@@ -1,0 +1,24 @@
+{
+  "background_color": "#0f0f12",
+  "description": "Exif撮影日時カレンダー＆Tcロゴ合成スタジオ (24MP出力対応)",
+  "display": "standalone",
+  "icons": [
+    {
+      "purpose": "any maskable",
+      "sizes": "192x192",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='36' fill='%2318181d'/><circle cx='96' cy='96' r='60' fill='none' stroke='%23dbe734' stroke-width='8'/><text x='96' y='112' font-family='sans-serif' font-size='48' font-weight='bold' fill='%23ffffff' text-anchor='middle'>22</text></svg>",
+      "type": "image/svg+xml"
+    },
+    {
+      "purpose": "any maskable",
+      "sizes": "512x512",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='96' fill='%2318181d'/><circle cx='256' cy='256' r='160' fill='none' stroke='%23dbe734' stroke-width='20'/><text x='256' y='300' font-family='sans-serif' font-size='130' font-weight='bold' fill='%23ffffff' text-anchor='middle'>22</text></svg>",
+      "type": "image/svg+xml"
+    }
+  ],
+  "name": "Photo Calendar Studio 24MP",
+  "orientation": "any",
+  "short_name": "CalStudio",
+  "start_url": "./index.html",
+  "theme_color": "#121212"
+}

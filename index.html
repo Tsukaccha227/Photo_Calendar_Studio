@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#121212">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Photo Calendar Studio</title>
+  
+  <!-- Google Fonts: Nova Flat & Great Vibes (Fallback/Vector) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nova+Flat&display=swap" rel="stylesheet">
+  
+  <link rel="manifest" href="./manifest.json">
+  <link rel="stylesheet" href="./style.css">
+  
+  <!-- Exif Reader (exifr) -->
+  <script src="https://cdn.jsdelivr.net/npm/exifr/dist/lite.umd.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- 左ペイン：プレビューエリア (Z Fold 8 展開時は左固定) -->
+    <main class="preview-pane">
+      <header class="app-header">
+        <div class="brand">
+          <span class="badge">24MP</span>
+          <h1>Photo Calendar Studio</h1>
+        </div>
+        <div class="header-actions">
+          <label for="imageLoader" class="btn btn-secondary">📷 写真を選択</label>
+          <input type="file" id="imageLoader" accept="image/*,.dng,.raw,.heic" hidden>
+          <button id="exportBtn" class="btn btn-primary" disabled>💾 24MP保存</button>
+        </div>
+      </header>
+
+      <div class="canvas-wrapper" id="canvasWrapper">
+        <canvas id="previewCanvas"></canvas>
+        <div class="empty-state" id="emptyState">
+          <p>写真を読み込んでください</p>
+          <span>Exifから撮影日時を自動抽出します</span>
+        </div>
+      </div>
+
+      <footer class="preview-footer">
+        <span id="exifStatus">画像未選択</span>
+        <span id="resStatus">出力: 6000 × 4000 px (24.0MP)</span>
+      </footer>
+    </main>
+
+    <!-- 右ペイン：コントロールパネル -->
+    <aside class="control-pane">
+      <div class="tabs">
+        <button class="tab-btn active" data-tab="tab-datetime">📅 日時・配置</button>
+        <button class="tab-btn" data-tab="tab-frame">🖼️ 枠・比率</button>
+        <button class="tab-btn" data-tab="tab-color">🎨 色・ロゴ</button>
+      </div>
+
+      <!-- タブ1: 日時・配置 -->
+      <section class="tab-content active" id="tab-datetime">
+        <div class="card">
+          <h2>撮影日時（カレンダー設定）</h2>
+          <div class="control-group">
+            <label>日付と時刻</label>
+            <input type="datetime-local" id="dateInput" class="input-full">
+          </div>
+          <div class="btn-row">
+            <button type="button" id="prevDayBtn" class="btn btn-small">◀ 前日 (-1d)</button>
+            <button type="button" id="nextDayBtn" class="btn btn-small">翌日 (+1d) ▶</button>
+            <button type="button" id="resetExifBtn" class="btn btn-small">Exifに戻す</button>
+          </div>
+          <div class="control-group" style="margin-top: 12px;">
+            <label class="toggle-label">
+              <span>時刻を表示する (AM/PM)</span>
+              <input type="checkbox" id="showTimeToggle" checked>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>カレンダー＆ロゴのレイアウト</h2>
+          <div class="control-group">
+            <label>スタンプの配置基準</label>
+            <div class="segmented-control">
+              <label><input type="radio" name="stampTarget" value="photo" checked><span>写真の内側</span></label>
+              <label><input type="radio" name="stampTarget" value="canvas"><span>キャンバス全体</span></label>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label>カレンダーの位置</label>
+            <div class="segmented-control">
+              <label><input type="radio" name="calPos" value="bottom-left" checked><span>左下</span></label>
+              <label><input type="radio" name="calPos" value="bottom-right"><span>右下</span></label>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="slider-header">
+              <label>カレンダーサイズ</label>
+              <span id="calScaleVal">100%</span>
+            </div>
+            <input type="range" id="calScale" min="50" max="160" value="100">
+          </div>
+
+          <div class="control-group">
+            <div class="slider-header">
+              <label>カレンダー端余白 (X / Y)</label>
+              <span id="calMarginVal">6.5% / 6.0%</span>
+            </div>
+            <div class="dual-slider">
+              <input type="range" id="calMarginX" min="1" max="20" step="0.5" value="6.5">
+              <input type="range" id="calMarginY" min="1" max="20" step="0.5" value="6.0">
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="slider-header">
+              <label>上部ロゴサイズ</label>
+              <span id="logoScaleVal">100%</span>
+            </div>
+            <input type="range" id="logoScale" min="50" max="160" value="100">
+          </div>
+
+          <div class="control-group">
+            <div class="slider-header">
+              <label>上部ロゴ上端余白</label>
+              <span id="logoMarginYVal">4.2%</span>
+            </div>
+            <input type="range" id="logoMarginY" min="1" max="15" step="0.2" value="4.2">
+          </div>
+        </div>
+      </section>
+
+      <!-- タブ2: 枠・比率 -->
+      <section class="tab-content" id="tab-frame">
+        <div class="card">
+          <h2>外枠（キャンバス全体）の比率</h2>
+          <div class="ratio-grid" id="canvasRatioGroup">
+            <button type="button" class="ratio-btn active" data-ratio="original">元比率</button>
+            <button type="button" class="ratio-btn" data-ratio="3:2">3:2</button>
+            <button type="button" class="ratio-btn" data-ratio="4:3">4:3</button>
+            <button type="button" class="ratio-btn" data-ratio="16:9">16:9</button>
+            <button type="button" class="ratio-btn" data-ratio="1:1">1:1</button>
+            <button type="button" class="ratio-btn" data-ratio="4:5">4:5</button>
+            <button type="button" class="ratio-btn" data-ratio="2:3">2:3</button>
+            <button type="button" class="ratio-btn" data-ratio="3:4">3:4</button>
+            <button type="button" class="ratio-btn" data-ratio="9:16">9:16</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>中の写真の比率（クロップ）</h2>
+          <div class="ratio-grid" id="photoRatioGroup">
+            <button type="button" class="ratio-btn active" data-ratio="original">元比率</button>
+            <button type="button" class="ratio-btn" data-ratio="3:2">3:2</button>
+            <button type="button" class="ratio-btn" data-ratio="4:3">4:3</button>
+            <button type="button" class="ratio-btn" data-ratio="16:9">16:9</button>
+            <button type="button" class="ratio-btn" data-ratio="1:1">1:1</button>
+            <button type="button" class="ratio-btn" data-ratio="4:5">4:5</button>
+            <button type="button" class="ratio-btn" data-ratio="2:3">2:3</button>
+            <button type="button" class="ratio-btn" data-ratio="3:4">3:4</button>
+            <button type="button" class="ratio-btn" data-ratio="9:16">9:16</button>
+          </div>
+          <div class="control-group" style="margin-top: 12px;">
+            <div class="slider-header">
+              <label>写真位置オフセット (X / Y)</label>
+              <button type="button" id="resetCropBtn" class="btn-link">中央に戻す</button>
+            </div>
+            <div class="dual-slider">
+              <input type="range" id="cropOffsetX" min="-100" max="100" value="0">
+              <input type="range" id="cropOffsetY" min="-100" max="100" value="0">
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>背景・外枠デザイン</h2>
+          <div class="control-group">
+            <label>フレームモード</label>
+            <div class="segmented-control">
+              <label><input type="radio" name="frameMode" value="none" checked><span>枠なし</span></label>
+              <label><input type="radio" name="frameMode" value="solid"><span>白枠(単色)</span></label>
+              <label><input type="radio" name="frameMode" value="blur"><span>ぼかし背景</span></label>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <div class="slider-header">
+              <label>外枠の太さ（余白）</label>
+              <span id="frameThicknessVal">6.0%</span>
+            </div>
+            <input type="range" id="frameThickness" min="0" max="25" step="0.5" value="6.0">
+          </div>
+
+          <div id="solidFrameOptions" class="sub-options">
+            <div class="control-group color-row">
+              <label>単色枠の背景色</label>
+              <div class="color-picker-wrap">
+                <button type="button" class="color-preset" data-target="frameColor" data-color="#FFFFFF" style="background:#FFF;"></button>
+                <button type="button" class="color-preset" data-target="frameColor" data-color="#111111" style="background:#111;"></button>
+                <input type="color" id="frameColor" value="#FFFFFF">
+              </div>
+            </div>
+          </div>
+
+          <div id="blurFrameOptions" class="sub-options">
+            <div class="control-group">
+              <div class="slider-header">
+                <label>ぼかし強度</label>
+                <span id="blurAmountVal">40px</span>
+              </div>
+              <input type="range" id="blurAmount" min="10" max="120" value="40">
+            </div>
+            <div class="control-group">
+              <div class="slider-header">
+                <label>ぼかし背景の明るさ</label>
+                <span id="blurBrightnessVal">85%</span>
+              </div>
+              <input type="range" id="blurBrightness" min="30" max="130" value="85">
+            </div>
+            <div class="control-group">
+              <label class="toggle-label">
+                <span>写真の周りに細い白フチをつける</span>
+                <input type="checkbox" id="innerBorderToggle">
+              </label>
+            </div>
+          </div>
+
+          <div class="control-group">
+            <label class="toggle-label">
+              <span>写真のドロップシャドウ（影）</span>
+              <input type="checkbox" id="photoShadowToggle" checked>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <!-- タブ3: 色・ロゴ -->
+      <section class="tab-content" id="tab-color">
+        <div class="card">
+          <h2>カラー設定</h2>
+          <div class="control-group color-row">
+            <label>基本文字色（月・時刻・平日）</label>
+            <div class="color-picker-wrap">
+              <button type="button" class="color-preset" data-target="textColor" data-color="#FFFFFF" style="background:#FFF;"></button>
+              <button type="button" class="color-preset" data-target="textColor" data-color="#1A1A1A" style="background:#1A1A1A;"></button>
+              <input type="color" id="textColor" value="#FFFFFF">
+            </div>
+          </div>
+
+          <div class="control-group color-row">
+            <label>上部ロゴ＆ラインカラー</label>
+            <div class="color-picker-wrap">
+              <button type="button" class="color-preset" data-target="logoColor" data-color="#FFFFFF" style="background:#FFF;"></button>
+              <button type="button" class="color-preset" data-target="logoColor" data-color="#1A1A1A" style="background:#1A1A1A;"></button>
+              <input type="color" id="logoColor" value="#FFFFFF">
+            </div>
+          </div>
+
+          <div class="control-group color-row">
+            <label>撮影日リング（丸枠）の色</label>
+            <div class="color-picker-wrap">
+              <button type="button" class="color-preset" data-target="ringColor" data-color="#DBE734" style="background:#DBE734;"></button>
+              <button type="button" class="color-preset" data-target="ringColor" data-color="#FFFFFF" style="background:#FFF;"></button>
+              <button type="button" class="color-preset" data-target="ringColor" data-color="#FF5252" style="background:#FF5252;"></button>
+              <input type="color" id="ringColor" value="#DBE734">
+            </div>
+          </div>
+
+          <hr class="divider">
+
+          <div class="control-group">
+            <label>カレンダーの土日配色</label>
+            <div class="segmented-control">
+              <label><input type="radio" name="weekendMode" value="mono" checked><span>基本色と統一(白等)</span></label>
+              <label><input type="radio" name="weekendMode" value="color"><span>土日カラー(赤/青)</span></label>
+            </div>
+          </div>
+
+          <div id="weekendColorOptions" class="sub-options">
+            <div class="control-group color-row">
+              <label>日曜日の文字色 (Sunday)</label>
+              <input type="color" id="sunColor" value="#FF5252">
+            </div>
+            <div class="control-group color-row">
+              <label>土曜日の文字色 (Saturday)</label>
+              <input type="color" id="satColor" value="#448AFF">
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>上部ロゴ詳細設定</h2>
+          <div class="control-group">
+            <label class="toggle-label">
+              <span>上部ロゴ＆ラインを表示する</span>
+              <input type="checkbox" id="showLogoToggle" checked>
+            </label>
+          </div>
+          <div class="control-group">
+            <label>サブテキスト</label>
+            <input type="text" id="logoSubText" value="@Tsukaccha" class="input-full">
+          </div>
+          <div class="control-group">
+            <label>カスタムロゴ画像差し替え (透過PNG/SVG)</label>
+            <p class="help-text">※デフォルトで「Tc」ロゴが内蔵されています。別画像にする場合のみ選択してください。</p>
+            <div class="btn-row">
+              <label for="customLogoLoader" class="btn btn-small">ロゴ画像を読込</label>
+              <input type="file" id="customLogoLoader" accept="image/png,image/svg+xml,image/webp" hidden>
+              <button type="button" id="resetLogoBtn" class="btn btn-small">標準ロゴに戻す</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <!-- 書き出し中オーバーレイ -->
+  <div id="loadingOverlay" class="loading-overlay" hidden>
+    <div class="spinner"></div>
+    <p>24MP 高解像度レンダリング中...</p>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
