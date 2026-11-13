@@ -1,10 +1,12 @@
-const CACHE_NAME = 'photo-calendar-studio-v1';
+const CACHE_NAME = 'photo-calendar-studio-v2';
 const ASSETS = [
   './',
   './index.html',
   './style.css',
   './app.js',
   './manifest.json',
+  './icon-192.svg',
+  './icon-512.svg',
   'https://fonts.googleapis.com/css2?family=Nova+Flat&display=swap',
   'https://cdn.jsdelivr.net/npm/exifr/dist/lite.umd.js'
 ];
