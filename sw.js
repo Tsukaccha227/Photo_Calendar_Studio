@@ -5,10 +5,8 @@ const ASSETS = [
   './style.css',
   './app.js',
   './manifest.json',
-  './icon-192.svg',
-  './icon-512.svg',
   'https://fonts.googleapis.com/css2?family=Nova+Flat&display=swap',
-  'https://cdn.jsdelivr.net/npm/exifr/dist/lite.umd.js'
+  'https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js'
 ];
 
 self.addEventListener('install', (event) => {

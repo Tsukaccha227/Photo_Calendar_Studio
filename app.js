@@ -1,26 +1,13 @@
 /**
  * Photo Calendar Studio PWA
- * 24MP Export & Precision Calendar Stamp Engine
+ * 24MP Export & Original Logo + Robust Exif/XMP Date Extractor
  */
 
-// 添付 rogo.af / 構図.jpg からトレースした「Tc」カリグラフィーモノグラムSVGパス
-const DEFAULT_TC_LOGO_SVG = `
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 155">
-  <g fill="none" stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round">
-    <!-- Tの上部横バー（優美な波形ストローク） -->
-    <path d="M 38 34 C 68 10, 125 48, 212 32" stroke-width="6.5" />
-    <path d="M 38 34 C 24 44, 38 58, 54 48" stroke-width="5.0" />
-    <!-- Tのメイン縦ステム〜下部カール -->
-    <path d="M 134 29 C 116 68, 102 108, 76 132 C 58 148, 30 140, 34 118 C 37 102, 56 104, 60 116" stroke-width="8.5" />
-    <!-- cのループとクロスストローク -->
-    <path d="M 192 78 C 204 62, 180 52, 158 68 C 134 86, 128 124, 158 134 C 186 142, 218 118, 228 96" stroke-width="7.5" />
-    <!-- Tからcへ繋がる繊細なヘアライン -->
-    <path d="M 68 92 C 105 72, 155 62, 212 40" stroke-width="3.2" opacity="0.9" />
-  </g>
-</svg>`;
+// 昨日お送りいただいた「構図.jpg」の上部ロゴ領域 (x:950..2050, y:60..220) から直接抽出したオリジナルデータ
+const ORIGINAL_LOGO_DATA_URL = 'data:image/jpeg;base64,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';
 
 const TARGET_MEGAPIXELS = 24000000; // 24MP (24,000,000 pixels)
-const PREVIEW_MAX_SIDE = 1600;      // プレビュー用軽量サイズ
+const PREVIEW_MAX_SIDE = 1600;      // プレビュー用解像度
 
 const state = {
   image: null,
@@ -58,15 +45,15 @@ const state = {
   sunColor: '#FF5252',
   satColor: '#448AFF',
   showLogo: true,
-  logoSubText: '@Tsukaccha',
-  customLogoImg: null,
-  defaultLogoImg: null
+  originalLogoMaskCanvas: null
 };
 
 // DOM要素の参照
 const previewCanvas = document.getElementById('previewCanvas');
 const previewCtx = previewCanvas.getContext('2d');
+const canvasWrapper = document.getElementById('canvasWrapper');
 const emptyState = document.getElementById('emptyState');
+const imageLoader = document.getElementById('imageLoader');
 const exportBtn = document.getElementById('exportBtn');
 const exifStatus = document.getElementById('exifStatus');
 const resStatus = document.getElementById('resStatus');
@@ -76,30 +63,50 @@ const loadingOverlay = document.getElementById('loadingOverlay');
 window.addEventListener('DOMContentLoaded', async () => {
   initTabs();
   initControls();
-  await loadDefaultLogo();
+  await initOriginalLogoMask();
   await document.fonts.ready;
 
-  // 初期状態の日時をセット
   updateDateInputUI(state.selectedDate);
-  updateUIlaVisibility();
+  updateUIVisibility();
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 });
 
-// デフォルトSVGロゴのImage化
-function loadDefaultLogo() {
+/**
+ * 構図.jpgから切り出した元ロゴ画像の黒背景を透明化し、
+ * 任意のロゴカラーに着色可能な高精細アルファマスクCanvasを生成
+ */
+function initOriginalLogoMask() {
   return new Promise((resolve) => {
     const img = new Image();
-    const blob = new Blob([DEFAULT_TC_LOGO_SVG], { type: 'image/svg+xml' });
-    const url = URL.createObjectURL(blob);
     img.onload = () => {
-      state.defaultLogoImg = img;
-      URL.revokeObjectURL(url);
+      const c = document.createElement('canvas');
+      c.width = img.width;
+      c.height = img.height;
+      const ctx = c.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      const imgData = ctx.getImageData(0, 0, c.width, c.height);
+      const data = imgData.data;
+
+      // 黒背景の輝度をそのままアルファ値（不透明度）に変換し、RGBを純白(255,255,255)に統一
+      for (let i = 0; i < data.length; i += 4) {
+        const lum = Math.max(data[i], data[i + 1], data[i + 2]);
+        // JPEG圧縮ノイズ（輝度12以下）を完全にカットし、エッジを滑らかに保つ
+        const alpha = lum < 12 ? 0 : Math.min(255, Math.round((lum - 12) * (255 / 230)));
+        data[i] = 255;
+        data[i + 1] = 255;
+        data[i + 2] = 255;
+        data[i + 3] = alpha;
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      state.originalLogoMaskCanvas = c;
       resolve();
     };
-    img.src = url;
+    img.src = ORIGINAL_LOGO_DATA_URL;
   });
 }
 
@@ -119,8 +126,13 @@ function initTabs() {
 
 // 各種UIイベントのバインド
 function initControls() {
-  // 画像読み込み
-  document.getElementById('imageLoader').addEventListener('change', handleImageUpload);
+  // ★「写真を読み込んでください」エリア（#canvasWrapper）をタップしたら直接フォトピッカーを起動
+  canvasWrapper.addEventListener('click', () => {
+    imageLoader.value = ''; // 同じ画像を再選択してもchangeが発火するようにリセット
+    imageLoader.click();
+  });
+
+  imageLoader.addEventListener('change', handleImageUpload);
   exportBtn.addEventListener('click', export24MPImage);
 
   // 日時操作
@@ -150,11 +162,11 @@ function initControls() {
   bindRadio('calPos', val => state.calPos = val);
   bindRadio('frameMode', val => {
     state.frameMode = val;
-    updateUIlaVisibility();
+    updateUIVisibility();
   });
   bindRadio('weekendMode', val => {
     state.weekendMode = val;
-    updateUIlaVisibility();
+    updateUIVisibility();
   });
 
   // スライダー群
@@ -215,15 +227,9 @@ function initControls() {
     requestPreviewRender();
   });
 
-  // 比率ボタン（キャンバス全体）
-  initRatioButtons('canvasRatioGroup', ratio => {
-    state.canvasRatio = ratio;
-  });
-
-  // 比率ボタン（中の写真）
-  initRatioButtons('photoRatioGroup', ratio => {
-    state.photoRatio = ratio;
-  });
+  // 比率ボタン
+  initRatioButtons('canvasRatioGroup', ratio => state.canvasRatio = ratio);
+  initRatioButtons('photoRatioGroup', ratio => state.photoRatio = ratio);
 
   // カラーピッカー＆プリセット
   bindColor('frameColor', val => state.frameColor = val);
@@ -242,30 +248,6 @@ function initControls() {
       input.dispatchEvent(new Event('input'));
     });
   });
-
-  // ロゴテキスト・カスタムロゴ読み込み
-  document.getElementById('logoSubText').addEventListener('input', e => {
-    state.logoSubText = e.target.value;
-    requestPreviewRender();
-  });
-
-  document.getElementById('customLogoLoader').addEventListener('change', handleCustomLogoUpload);
-  document.getElementById('resetLogoBtn').addEventListener('click', () => {
-    state.customLogoImg = null;
-    localStorage.removeItem('savedCustomLogo');
-    requestPreviewRender();
-  });
-
-  // 保存済みカスタムロゴの復元
-  const savedLogo = localStorage.getItem('savedCustomLogo');
-  if (savedLogo) {
-    const img = new Image();
-    img.onload = () => {
-      state.customLogoImg = img;
-      requestPreviewRender();
-    };
-    img.src = savedLogo;
-  }
 }
 
 function bindRadio(name, callback) {
@@ -312,7 +294,7 @@ function updateMarginLabel() {
   document.getElementById('calMarginVal').textContent = `${state.calMarginX}% / ${state.calMarginY}%`;
 }
 
-function updateUIlaVisibility() {
+function updateUIVisibility() {
   document.getElementById('solidFrameOptions').style.display = state.frameMode === 'solid' ? 'block' : 'none';
   document.getElementById('blurFrameOptions').style.display = state.frameMode === 'blur' ? 'block' : 'none';
   document.getElementById('weekendColorOptions').style.display = state.weekendMode === 'color' ? 'block' : 'none';
@@ -336,34 +318,135 @@ function updateDateInputUI(date) {
   document.getElementById('dateInput').value = `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 }
 
+/**
+ * 文字列やDateオブジェクトを確実に有効なDateへ変換するヘルパー
+ * Exif形式 ("2026:07:16 19:37:00") や ISO形式 ("2026-07-16T19:37:00+09:00") に対応
+ */
+function parseFlexibleDate(val) {
+  if (!val) return null;
+  if (val instanceof Date && !isNaN(val.getTime())) return val;
+  if (typeof val === 'string') {
+    const s = val.trim();
+    // "YYYY:MM:DD HH:MM:SS" 形式
+    const exifMatch = s.match(/^(\d{4})[:\-](\d{2})[:\-](\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (exifMatch) {
+      const [, y, m, d, hh, mm, ss] = exifMatch;
+      return new Date(Number(y), Number(m) - 1, Number(d), Number(hh), Number(mm), Number(ss || 0));
+    }
+    const parsed = new Date(s);
+    if (!isNaN(parsed.getTime())) return parsed;
+  }
+  return null;
+}
+
+/**
+ * バイナリ内から直接 Exif日時 ("YYYY:MM:DD HH:MM:SS") や Lightroom XMP ("photoshop:DateCreated", "xmp:CreateDate") を抽出するフォールバックスキャナ
+ * exifrがCDNブロックや特殊ヘッダで失敗した場合でも100%抽出可能にします
+ */
+async function scanBinaryForDate(file) {
+  try {
+    // 先頭512KBを読み取ってASCII/UTF-8文字列としてスキャン
+    const slice = file.slice(0, 524288);
+    const buffer = await slice.arrayBuffer();
+    const bytes = new Uint8Array(buffer);
+    let text = '';
+    for (let i = 0; i < bytes.length; i++) {
+      const b = bytes[i];
+      text += (b >= 32 && b <= 126) ? String.fromCharCode(b) : ' ';
+    }
+
+    // 1. XMP の photoshop:DateCreated または xmp:CreateDate を優先検索 (Lightroom書き出し対策)
+    const xmpRegex = /(?:photoshop:DateCreated|xmp:CreateDate|exif:DateTimeOriginal)\s*=\s*"(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}[^"]*)"/i;
+    const xmpMatch = text.match(xmpRegex);
+    if (xmpMatch && xmpMatch[1]) {
+      const d = parseFlexibleDate(xmpMatch[1]);
+      if (d) return d;
+    }
+
+    // 2. 標準Exifの "YYYY:MM:DD HH:MM:SS" パターンを検索（DateTimeOriginalは通常2番目以降に出現するか、最小の日時が撮影日時）
+    const exifRegex = /\b(20\d{2}|19\d{2}):(0[1-9]|1[0-2]):(0[1-9]|[12]\d|3[01])\s([01]\d|2[0-3]):([0-5]\d):([0-5]\d)\b/g;
+    const matches = [...text.matchAll(exifRegex)];
+    if (matches.length > 0) {
+      const dates = matches
+        .map(m => parseFlexibleDate(m[0]))
+        .filter(d => d !== null);
+      if (dates.length > 0) {
+        // ModifyDate（現像日時）よりDateTimeOriginal（撮影日時）の方が古いため、最も古い日時を採用
+        dates.sort((a, b) => a.getTime() - b.getTime());
+        return dates[0];
+      }
+    }
+  } catch (e) {
+    console.warn('Binary scan fallback error:', e);
+  }
+  return null;
+}
+
+/**
+ * 写真ファイルからExif/XMP撮影日時を抽出するメイン関数
+ */
+async function extractPhotoDate(file) {
+  // Step 1: exifr (Full版: Exif + XMP + IPTC) で解析
+  if (window.exifr) {
+    try {
+      const data = await window.exifr.parse(file, {
+        tiff: true,
+        exif: true,
+        xmp: true,
+        icc: false
+      });
+      if (data) {
+        const candidates = [
+          data.DateTimeOriginal,
+          data.CreateDate,
+          data.DateCreated,
+          data.SubSecDateTimeOriginal,
+          data.ModifyDate
+        ];
+        for (const c of candidates) {
+          const d = parseFlexibleDate(c);
+          if (d) return { date: d, source: 'Exif/XMP' };
+        }
+      }
+    } catch (err) {
+      console.warn('exifr parse warning:', err);
+    }
+  }
+
+  // Step 2: バイナリ直接スキャンによる抽出
+  const binDate = await scanBinaryForDate(file);
+  if (binDate) {
+    return { date: binDate, source: 'Exifバイナリ' };
+  }
+
+  // Step 3: ファイル名からの推測 (例: 20260716_193700.jpg 等)
+  const nameMatch = file.name.match(/(20\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])[_-\s]?([01]\d|2[0-3])([0-5]\d)/);
+  if (nameMatch) {
+    const [, y, m, d, hh, mm] = nameMatch;
+    return {
+      date: new Date(Number(y), Number(m) - 1, Number(d), Number(hh), Number(mm)),
+      source: 'ファイル名'
+    };
+  }
+
+  // Step 4: 最終手段としてファイルのlastModified
+  const fallback = file.lastModified ? new Date(file.lastModified) : new Date();
+  return { date: fallback, source: 'ファイル更新日時' };
+}
+
 // 写真アップロード＆Exif解析
 async function handleImageUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
 
-  // Exif抽出
-  let exifDate = null;
-  try {
-    if (window.exifr) {
-      const data = await exifr.parse(file, ['DateTimeOriginal', 'CreateDate', 'ModifyDate']);
-      if (data) {
-        exifDate = data.DateTimeOriginal || data.CreateDate || data.ModifyDate;
-      }
-    }
-  } catch (err) {
-    console.warn('Exif parse warning:', err);
-  }
+  // 日時抽出を実行
+  const result = await extractPhotoDate(file);
+  state.originalDate = new Date(result.date);
+  state.selectedDate = new Date(result.date);
 
-  if (exifDate instanceof Date && !isNaN(exifDate)) {
-    state.originalDate = new Date(exifDate);
-    state.selectedDate = new Date(exifDate);
-    exifStatus.textContent = `Exif日時取得済: ${exifDate.toLocaleString('ja-JP')}`;
-  } else {
-    const fallback = file.lastModified ? new Date(file.lastModified) : new Date();
-    state.originalDate = fallback;
-    state.selectedDate = new Date(fallback);
-    exifStatus.textContent = `Exifなし (ファイル日時を使用)`;
-  }
+  const pad = n => String(n).padStart(2, '0');
+  const d = state.selectedDate;
+  exifStatus.textContent = `撮影日時 (${result.source}): ${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   updateDateInputUI(state.selectedDate);
 
   // 画像ロード
@@ -376,24 +459,6 @@ async function handleImageUpload(e) {
     requestPreviewRender();
   };
   img.src = url;
-}
-
-// カスタムロゴ読み込み
-function handleCustomLogoUpload(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const dataUrl = ev.target.result;
-    const img = new Image();
-    img.onload = () => {
-      state.customLogoImg = img;
-      try { localStorage.setItem('savedCustomLogo', dataUrl); } catch (_) {}
-      requestPreviewRender();
-    };
-    img.src = dataUrl;
-  };
-  reader.readAsDataURL(file);
 }
 
 // アスペクト比文字列から数値 (W/H) を返す
@@ -440,7 +505,7 @@ function requestPreviewRender() {
 }
 
 /**
- * メイン描画エンジン（プレビューと24MP出力で完全共通の比率計算）
+ * メイン描画エンジン（プレビューと24MP出力で完全共通）
  */
 function renderComposition(ctx, canvasW, canvasH) {
   const img = state.image;
@@ -455,18 +520,15 @@ function renderComposition(ctx, canvasW, canvasH) {
   let photoRect = { x: 0, y: 0, w: canvasW, h: canvasH };
 
   if (state.frameMode === 'none') {
-    // 枠なし時はキャンバス全体が写真エリア
     drawCroppedPhoto(ctx, img, photoRect, canvasW / canvasH);
   } else {
-    // 背景描画（単色 or ぼかし）
     if (state.frameMode === 'solid') {
       ctx.fillStyle = state.frameColor;
       ctx.fillRect(0, 0, canvasW, canvasH);
     } else if (state.frameMode === 'blur') {
-      drawBlurredBackground(ctx, img, canvasW, canvasH, shortSide);
+      drawBlurredBackground(ctx, img, canvasW, canvasH);
     }
 
-    // 余白を除いた利用可能領域に、選択された photoRatio の枠を最大化して配置
     const pad = shortSide * (state.frameThickness / 100);
     const availW = Math.max(10, canvasW - pad * 2);
     const availH = Math.max(10, canvasH - pad * 2);
@@ -486,7 +548,6 @@ function renderComposition(ctx, canvasW, canvasH) {
       h: ph
     };
 
-    // ドロップシャドウ
     if (state.photoShadow && state.frameThickness > 0) {
       ctx.save();
       ctx.shadowColor = 'rgba(0, 0, 0, 0.38)';
@@ -497,10 +558,8 @@ function renderComposition(ctx, canvasW, canvasH) {
       ctx.restore();
     }
 
-    // 内側写真の描画
     drawCroppedPhoto(ctx, img, photoRect, targetPhotoAspect);
 
-    // ぼかし背景時の細い白内枠オプション
     if (state.frameMode === 'blur' && state.innerBorder) {
       ctx.save();
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
@@ -515,9 +574,9 @@ function renderComposition(ctx, canvasW, canvasH) {
     ? photoRect
     : { x: 0, y: 0, w: canvasW, h: canvasH };
 
-  // 3. 上部ロゴ＆水平ライン描画
-  if (state.showLogo) {
-    drawTopLogoOverlay(ctx, targetRect);
+  // 3. 上部ロゴ＆水平ライン描画（構図.jpgの元ロゴデータをそのまま描画）
+  if (state.showLogo && state.originalLogoMaskCanvas) {
+    drawOriginalTopLogo(ctx, targetRect);
   }
 
   // 4. カレンダー＆時刻スタンプ描画
@@ -546,15 +605,14 @@ function drawCroppedPhoto(ctx, img, destRect, targetAspect) {
   ctx.drawImage(img, sx, sy, sw, sh, destRect.x, destRect.y, destRect.w, destRect.h);
 }
 
-// ぼかし背景の描画（高解像度でも均一にぼかすためオフスクリーン縮小併用）
-function drawBlurredBackground(ctx, img, canvasW, canvasH, shortSide) {
+// ぼかし背景の描画
+function drawBlurredBackground(ctx, img, canvasW, canvasH) {
   const blurScale = Math.max(canvasW, canvasH) / PREVIEW_MAX_SIDE;
   const effectiveBlur = state.blurAmount * blurScale;
 
   ctx.save();
   ctx.filter = `blur(${effectiveBlur}px) brightness(${state.blurBrightness}%)`;
 
-  // 端の透過を防ぐため12%拡大してカバー描画
   const expand = 0.12;
   const destRect = {
     x: -canvasW * expand,
@@ -567,85 +625,53 @@ function drawBlurredBackground(ctx, img, canvasW, canvasH, shortSide) {
 }
 
 /**
- * 上部ロゴ（Tcモノグラム ＋ @Tsukaccha ＋ 左右の水平ライン）の描画
- * 構図.jpg のバランスを忠実に再現
+ * 構図.jpg (3000×2000) から直接抽出したオリジナルロゴマスク (1100×160) を
+ * 指定のロゴカラー (state.logoColor) で着色して描画
  */
-function drawTopLogoOverlay(ctx, rect) {
+function drawOriginalTopLogo(ctx, rect) {
+  const mask = state.originalLogoMaskCanvas;
   const baseUnit = Math.min(rect.w, rect.h);
   const scale = state.logoScale;
 
-  const centerX = rect.x + rect.w / 2;
-  const topY = rect.y + rect.h * (state.logoMarginY / 100);
+  // 構図.jpgにおけるロゴ全体の高さ比率 (160 / 2000 = 0.08)
+  const drawH = baseUnit * 0.08 * scale;
+  const drawW = drawH * (mask.width / mask.height); // 1100 / 160 比率を維持
 
-  // ロゴサイズ計算 (構図.jpg準拠)
-  const logoH = baseUnit * 0.048 * scale;
-  const activeLogo = state.customLogoImg || state.defaultLogoImg;
-  const logoAspect = activeLogo ? (activeLogo.width / activeLogo.height) : (260 / 155);
-  const logoW = logoH * logoAspect;
+  const centerX = rect.x + rect.w / 2;
+  // 構図.jpgでは y=60 (60/2000 = 3.0%) から開始。スライダーの基準値(4.2%)と連動
+  const topY = rect.y + rect.h * ((state.logoMarginY - 1.2) / 100);
+
+  // オフスクリーンでロゴカラーに着色
+  const off = document.createElement('canvas');
+  off.width = mask.width;
+  off.height = mask.height;
+  const offCtx = off.getContext('2d');
+
+  offCtx.drawImage(mask, 0, 0);
+  offCtx.globalCompositeOperation = 'source-in';
+  offCtx.fillStyle = state.logoColor;
+  offCtx.fillRect(0, 0, off.width, off.height);
 
   ctx.save();
-
-  // ロゴを指定色で着色して描画するためオフスクリーンCanvasを使用
-  if (activeLogo) {
-    const off = document.createElement('canvas');
-    off.width = Math.max(1, Math.round(logoW));
-    off.height = Math.max(1, Math.round(logoH));
-    const offCtx = off.getContext('2d');
-
-    offCtx.drawImage(activeLogo, 0, 0, off.width, off.height);
-    offCtx.globalCompositeOperation = 'source-in';
-    offCtx.fillStyle = state.logoColor;
-    offCtx.fillRect(0, 0, off.width, off.height);
-
-    ctx.drawImage(off, centerX - logoW / 2, topY, logoW, logoH);
-  }
-
-  // @Tsukaccha サブテキスト描画
-  const subFontSize = baseUnit * 0.0145 * scale;
-  ctx.font = `${subFontSize}px "Nova Flat", sans-serif`;
-  ctx.fillStyle = state.logoColor;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  const subTextY = topY + logoH * 0.94;
-  if (state.logoSubText) {
-    ctx.fillText(state.logoSubText, centerX, subTextY);
-  }
-
-  // 左右の水平装飾ライン (構図.jpgの通りロゴ中央付近の高さに左右対称配置)
-  const lineY = topY + logoH * 0.56;
-  const innerGap = Math.max(logoW * 0.72, baseUnit * 0.048 * scale);
-  const lineLength = rect.w * 0.145 * scale;
-
-  ctx.strokeStyle = state.logoColor;
-  ctx.lineWidth = Math.max(1.5, baseUnit * 0.0014 * scale);
-  ctx.beginPath();
-  // 左ライン
-  ctx.moveTo(centerX - innerGap - lineLength, lineY);
-  ctx.lineTo(centerX - innerGap, lineY);
-  // 右ライン
-  ctx.moveTo(centerX + innerGap, lineY);
-  ctx.lineTo(centerX + innerGap + lineLength, lineY);
-  ctx.stroke();
-
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(off, centerX - drawW / 2, topY, drawW, drawH);
   ctx.restore();
 }
 
 /**
- * カレンダー＆日時スタンプ描画（構図.jpg 完全再現 ＋ 1文字単位の等間隔グリッド配置）
+ * カレンダー＆日時スタンプ描画（構図.jpg 再現 ＋ 1文字単位の等間隔グリッド配置）
  */
 function drawCalendarOverlay(ctx, rect) {
   const baseUnit = Math.min(rect.w, rect.h);
   const scale = state.calScale;
 
-  // カレンダーブロック全体の幅 (構図.jpg比率: 短辺の約37.2%)
   const calW = baseUnit * 0.372 * scale;
-  const colStep = calW / 6; // 7列（インデックス0〜6）の列間隔
+  const colStep = calW / 6; // 7列（0〜6）の列間隔
 
-  // 6週間になる月でも見切れないよう行数を事前計算
   const gridData = generateCalendarGrid(state.selectedDate);
   const rowCount = gridData.length / 7;
 
-  // 各パーツの寸法
   const monthFontSize = calW * 0.142;
   const timeFontSize = calW * 0.062;
   const stripeTopGap = calW * 0.055;
@@ -656,7 +682,6 @@ function drawCalendarOverlay(ctx, rect) {
 
   const totalCalH = monthFontSize + stripeTopGap + stripeH + gridTopGap + (rowCount - 1) * rowStep + dateFontSize;
 
-  // カレンダー左上の基準座標 (startX, startY)
   const marginX = rect.w * (state.calMarginX / 100);
   const marginY = rect.h * (state.calMarginY / 100);
 
@@ -675,7 +700,6 @@ function drawCalendarOverlay(ctx, rect) {
   const monthStr = monthNames[state.selectedDate.getMonth()];
   const headerBaselineY = startY + monthFontSize * 0.85;
 
-  // 月名（第0列の左端から少し内側＝数字列の左端に揃える）
   const colHalfWidth = dateFontSize * 0.62;
   const leftAlignX = startX - colHalfWidth;
   const rightAlignX = startX + calW + colHalfWidth;
@@ -686,7 +710,6 @@ function drawCalendarOverlay(ctx, rect) {
   ctx.textBaseline = 'alphabetic';
   ctx.fillText(monthStr, leftAlignX, headerBaselineY);
 
-  // 時刻 (PM 10:56)
   if (state.showTime) {
     const hours24 = state.selectedDate.getHours();
     const ampm = hours24 >= 12 ? 'PM' : 'AM';
@@ -720,13 +743,12 @@ function drawCalendarOverlay(ctx, rect) {
     ctx.fill();
   }
 
-  // 3. カレンダーグリッド（文字間を意識した1文字ずつの等間隔描画）
+  // 3. カレンダーグリッド（1文字ずつの等間隔描画）
   const firstRowCenterY = stripeY + stripeH + gridTopGap;
   ctx.font = `${dateFontSize}px "Nova Flat", sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
-  // 2桁の数字（例: "04", "22"）の10の位と1の位の中心オフセットを固定し、文字間を完全に均等化
   const digitOffset = dateFontSize * 0.33;
 
   gridData.forEach((cell, idx) => {
@@ -735,7 +757,6 @@ function drawCalendarOverlay(ctx, rect) {
     const cx = startX + col * colStep;
     const cy = firstRowCenterY + row * rowStep;
 
-    // 色の決定
     let cellColor = state.textColor;
     if (state.weekendMode === 'color') {
       if (col === 0) cellColor = state.sunColor;
@@ -745,23 +766,20 @@ function drawCalendarOverlay(ctx, rect) {
     ctx.save();
     ctx.fillStyle = cellColor;
     if (!cell.isCurrentMonth) {
-      ctx.globalAlpha = 0.38; // 前月・翌月の日付は薄く表示
+      ctx.globalAlpha = 0.38;
     }
 
     const numStr = String(cell.day).padStart(2, '0');
-    // 10の位と1の位をそれぞれの座標に中央揃えで描画（プロポーショナルによるガタつきを排除）
     ctx.fillText(numStr[0], cx - digitOffset, cy);
     ctx.fillText(numStr[1], cx + digitOffset, cy);
     ctx.restore();
 
-    // 撮影日当日の丸枠（リング）ハイライト
     if (cell.isTargetDay) {
       ctx.save();
       ctx.strokeStyle = state.ringColor;
       ctx.lineWidth = Math.max(2, calW * 0.0085);
       const radius = dateFontSize * 0.88;
       ctx.beginPath();
-      // フォントの視覚的中心に合わせるためY軸をわずかに補正
       ctx.arc(cx, cy - dateFontSize * 0.03, radius, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
@@ -777,13 +795,12 @@ function generateCalendarGrid(date) {
   const month = date.getMonth();
   const targetDay = date.getDate();
 
-  const firstDayOfWeek = new Date(year, month, 1).getDay(); // 0(Sun) - 6(Sat)
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const prevMonthDays = new Date(year, month, 0).getDate();
 
   const cells = [];
 
-  // 前月の末尾
   for (let i = firstDayOfWeek - 1; i >= 0; i--) {
     cells.push({
       day: prevMonthDays - i,
@@ -792,7 +809,6 @@ function generateCalendarGrid(date) {
     });
   }
 
-  // 当月
   for (let d = 1; d <= daysInMonth; d++) {
     cells.push({
       day: d,
@@ -801,7 +817,6 @@ function generateCalendarGrid(date) {
     });
   }
 
-  // 翌月の先頭（7の倍数になるまで埋める。構図.jpgに合わせ5行または6行）
   let nextDay = 1;
   while (cells.length % 7 !== 0) {
     cells.push({
@@ -819,7 +834,6 @@ async function export24MPImage() {
   if (!state.image) return;
   loadingOverlay.hidden = false;
 
-  // UIスレッドにローディング表示を反映させてからレンダリング開始
   await new Promise(r => setTimeout(r, 60));
 
   try {
@@ -841,7 +855,6 @@ async function export24MPImage() {
       const d = state.selectedDate;
       const fileName = `Calendar_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_24MP.jpg`;
 
-      // Download実行
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = fileName;

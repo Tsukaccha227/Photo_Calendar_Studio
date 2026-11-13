@@ -8,21 +8,20 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Photo Calendar Studio</title>
   
-  <!-- Google Fonts: Nova Flat & Great Vibes (Fallback/Vector) -->
+  <!-- Google Fonts: Nova Flat -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nova+Flat&display=swap" rel="stylesheet">
   
   <link rel="manifest" href="./manifest.json">
-  <link rel="icon" href="./icon-192.svg" type="image/svg+xml">
   <link rel="stylesheet" href="./style.css">
   
-  <!-- Exif Reader (exifr) -->
-  <script src="https://cdn.jsdelivr.net/npm/exifr/dist/lite.umd.js"></script>
+  <!-- Exif Reader: Full build (Exif + XMP + IPTC 完全対応) -->
+  <script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
 </head>
 <body>
   <div class="app-container">
-    <!-- 左ペイン：プレビューエリア (Z Fold 8 展開時は左固定) -->
+    <!-- 左ペイン：プレビューエリア -->
     <main class="preview-pane">
       <header class="app-header">
         <div class="brand">
@@ -31,16 +30,19 @@
         </div>
         <div class="header-actions">
           <label for="imageLoader" class="btn btn-secondary">📷 写真を選択</label>
-          <input type="file" id="imageLoader" accept="image/*,.dng,.raw,.heic" hidden>
+          <!-- accept="image/*" のみにすることでAndroidのGoogleフォト/フォトピッカーを直接起動 -->
+          <input type="file" id="imageLoader" accept="image/*" hidden>
           <button id="exportBtn" class="btn btn-primary" disabled>💾 24MP保存</button>
         </div>
       </header>
 
-      <div class="canvas-wrapper" id="canvasWrapper">
+      <!-- タップで直接写真選択が開くエリア -->
+      <div class="canvas-wrapper clickable" id="canvasWrapper" title="タップして写真を選択">
         <canvas id="previewCanvas"></canvas>
         <div class="empty-state" id="emptyState">
-          <p>写真を読み込んでください</p>
-          <span>Exifから撮影日時を自動抽出します</span>
+          <div class="empty-icon">🖼️</div>
+          <p>ここをタップして写真を読み込む</p>
+          <span>Google フォト / ギャラリーから選択（Exif日時自動抽出）</span>
         </div>
       </div>
 
@@ -293,25 +295,12 @@
         </div>
 
         <div class="card">
-          <h2>上部ロゴ詳細設定</h2>
+          <h2>上部ロゴ表示設定</h2>
           <div class="control-group">
             <label class="toggle-label">
-              <span>上部ロゴ＆ラインを表示する</span>
+              <span>上部ロゴ（元デザインデータ）を表示する</span>
               <input type="checkbox" id="showLogoToggle" checked>
             </label>
-          </div>
-          <div class="control-group">
-            <label>サブテキスト</label>
-            <input type="text" id="logoSubText" value="@Tsukaccha" class="input-full">
-          </div>
-          <div class="control-group">
-            <label>カスタムロゴ画像差し替え (透過PNG/SVG)</label>
-            <p class="help-text">※デフォルトで「Tc」ロゴが内蔵されています。別画像にする場合のみ選択してください。</p>
-            <div class="btn-row">
-              <label for="customLogoLoader" class="btn btn-small">ロゴ画像を読込</label>
-              <input type="file" id="customLogoLoader" accept="image/png,image/svg+xml,image/webp" hidden>
-              <button type="button" id="resetLogoBtn" class="btn btn-small">標準ロゴに戻す</button>
-            </div>
           </div>
         </div>
       </section>
